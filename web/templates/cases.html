@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案例库 — 学生票合规判断</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>📚 案例库</h1>
+  <nav><a href="/">🏠 首页</a> | <a href="/cases">📚 案例库</a></nav>
+  <p class="hint">共 {{ cases|length }} 个真实案例，涵盖合规/超区间/改家/申诉合并/联程等场景</p>
+</header>
+
+<main class="cases-grid">
+{% for c in cases %}
+<div class="case-card">
+  <div class="case-header">
+    <span class="case-id">#{{ loop.index }}</span>
+    <h2>{{ c.title }}</h2>
+  </div>
+  <div class="case-body">
+    <p><strong>场景：</strong>{{ c.scenario }}</p>
+    <p><strong>判断：</strong>{{ c.judgment }}</p>
+    {% if c.get("recommendation") %}
+    <p><strong>建议：</strong>{{ c.recommendation }}</p>
+    {% endif %}
+    {% if c.get("key_rule") %}
+    <p class="key-rule"><strong>关键规则：</strong>{{ c.key_rule }}</p>
+    {% endif %}
+    {% if c.get("risk") %}
+    <p class="risk-tag"><strong>风险：</strong>{{ c.risk }}</p>
+    {% endif %}
+    {% if c.get("interval_on_path") is sameas true %}
+    <span class="tag ok">合规</span>
+    {% elif c.get("interval_on_path") is sameas false %}
+    <span class="tag fail">不合规</span>
+    {% elif c.get("interval_on_path") is mapping %}
+    <span class="tag partial">部分合规</span>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+</main>
+
+<footer>
+  <p>案例库持续更新中，源自实际用户咨询与规则验证</p>
+</footer>
+</body>
+</html>
