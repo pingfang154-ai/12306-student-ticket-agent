@@ -7,45 +7,77 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header>
-  <h1>📚 案例库</h1>
-  <nav><a href="/">🏠 首页</a> | <a href="/cases">📚 案例库</a></nav>
-  <p class="hint">共 {{ cases|length }} 个真实案例，涵盖合规/超区间/改家/申诉合并/联程等场景</p>
+
+<!-- 顶部导航 -->
+<nav class="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="brand">
+      <span class="brand-icon">🚄</span>
+      <span class="brand-text">
+        <span class="brand-title">学生票合规判断</span>
+        <span class="brand-sub">中国铁路 · 区间智能核验</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="/">🏠 首页</a>
+      <a href="/cases" class="active">📚 案例库</a>
+    </div>
+  </div>
+</nav>
+
+<!-- 案例库 Hero -->
+<header class="hero" style="padding: 44px 20px 32px;">
+  <div class="hero-inner">
+    <h1><span class="accent">📚 案例库</span></h1>
+    <p class="hero-desc">共 {{ cases|length }} 个真实案例，涵盖合规、超区间、改家、申诉合并、联程等常见场景</p>
+    <div class="hero-stats">
+      <span class="stat-pill blue">真实场景</span>
+      <span class="stat-pill mint">规则解读</span>
+      <span class="stat-pill cream">购票建议</span>
+    </div>
+  </div>
 </header>
 
-<main class="cases-grid">
-{% for c in cases %}
-<div class="case-card">
-  <div class="case-header">
-    <span class="case-id">#{{ loop.index }}</span>
-    <h2>{{ c.title }}</h2>
-  </div>
-  <div class="case-body">
-    <p><strong>场景：</strong>{{ c.scenario }}</p>
-    <p><strong>判断：</strong>{{ c.judgment }}</p>
-    {% if c.get("recommendation") %}
-    <p><strong>建议：</strong>{{ c.recommendation }}</p>
-    {% endif %}
-    {% if c.get("key_rule") %}
-    <p class="key-rule"><strong>关键规则：</strong>{{ c.key_rule }}</p>
-    {% endif %}
-    {% if c.get("risk") %}
-    <p class="risk-tag"><strong>风险：</strong>{{ c.risk }}</p>
-    {% endif %}
-    {% if c.get("interval_on_path") is sameas true %}
-    <span class="tag ok">合规</span>
-    {% elif c.get("interval_on_path") is sameas false %}
-    <span class="tag fail">不合规</span>
-    {% elif c.get("interval_on_path") is mapping %}
-    <span class="tag partial">部分合规</span>
-    {% endif %}
-  </div>
-</div>
-{% endfor %}
+<main>
+  <section class="card" style="padding: 24px;">
+    <div class="cases-grid">
+      {% for c in cases %}
+      <article class="case-card">
+        <div class="case-header">
+          <span class="case-id">{{ loop.index }}</span>
+          <h2>{{ c.title }}</h2>
+        </div>
+        <div class="case-body">
+          <p><strong>场景：</strong>{{ c.scenario }}</p>
+          <p><strong>判断：</strong>{{ c.judgment }}</p>
+          {% if c.get("recommendation") %}
+          <p><strong>建议：</strong>{{ c.recommendation }}</p>
+          {% endif %}
+          {% if c.get("key_rule") %}
+          <p class="key-rule"><strong>关键规则：</strong>{{ c.key_rule }}</p>
+          {% endif %}
+          {% if c.get("risk") %}
+          <p class="risk-tag"><strong>风险：</strong>{{ c.risk }}</p>
+          {% endif %}
+          <div class="case-tags">
+            {% if c.get("interval_on_path") is sameas true %}
+            <span class="tag ok">✅ 合规</span>
+            {% elif c.get("interval_on_path") is sameas false %}
+            <span class="tag fail">❌ 不合规</span>
+            {% elif c.get("interval_on_path") is mapping %}
+            <span class="tag partial">⚠️ 部分合规</span>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
 </main>
 
 <footer>
   <p>案例库持续更新中，源自实际用户咨询与规则验证</p>
 </footer>
+
 </body>
 </html>
