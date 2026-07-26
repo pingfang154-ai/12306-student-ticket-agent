@@ -1,28 +1,27 @@
-# ===== Python 字节码 / 缓存 =====
+# ---- Python caches ----
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.pyc
 
-# ===== 备份文件（railway_data_v2.0.bak 等）=====
+# ---- Backups (railway_data_v2.x.bak etc.) ----
 *.bak
 
-# ===== WorkBuddy 本地数据（记忆、配置、私有信息，勿入库）=====
+# ---- Virtual environments ----
+venv/
+.venv/
+env/
+
+# ---- Local memory / workspace ----
 .workbuddy/
 
-# ===== 虚拟环境 =====
-.venv/
-venv/
-env/
-ENV/
-
-# ===== 操作系统 / 编辑器 =====
-Thumbs.db
+# ---- OS / editor ----
 .DS_Store
-ehthumbs.db
-Desktop.ini
-.idea/
+Thumbs.db
 .vscode/
+.idea/
 
-# ===== 日志 =====
+# ---- Logs ----
 *.log
+
+# ---- Node ----
+node_modules/
