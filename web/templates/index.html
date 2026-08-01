@@ -1,113 +1,232 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学生票合规判断</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学生票区间合规判断</title>
 <link rel="stylesheet" href="/static/style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
-<header>
-  <h1>🚄 学生票区间合规判断</h1>
-  <nav><a href="/">🏠 首页</a> | <a href="/cases">📚 案例库</a></nav>
-  <p class="subtitle">🎓 输入你的出行计划，快速判断能否享受学生优惠</p>
-  <p class="hint">输入城市名或站名均可，自动同城归并；支持改家后新区间判断</p>
-</header>
-<main>
-<form method="post" action="/check">
-  <div class="form-row">
-    <label><span class="label-icon">🏫</span>学校所在地城市 <input class="ac-input" name="school" value="{{ input.school if input is defined else '' }}" required placeholder="如：成都" autocomplete="off"></label>
-    <label><span class="label-icon">🏠</span>家庭所在地城市 <input class="ac-input" name="home" value="{{ input.home if input is defined else '' }}" required placeholder="如：北京" autocomplete="off"></label>
-  </div>
-  <div class="form-row">
-    <label><span class="label-icon">🚉</span>出发站 <input class="ac-input" name="dep" value="{{ input.dep if input is defined else '' }}" required placeholder="如：成都东" autocomplete="off"></label>
-    <label><span class="label-icon">🚉</span>到达站 <input class="ac-input" name="arr" value="{{ input.arr if input is defined else '' }}" required placeholder="如：北京西" autocomplete="off"></label>
-  </div>
-  <!-- 途经站点区域 -->
-  <div class="form-row"><label>途经站点（可选）</label></div>
-  <div id="waypoints-container"></div>
-  <div class="form-row"><button type="button" onclick="addWaypoint()" class="btn-add">➕ 添加途经站</button></div>
-    <div class="form-row form-row-3">
-    <label>席别 <select name="seat"><option value="">不限</option>
-      {% for s in allowed_seats %}<option value="{{ s }}" {% if input is defined and input.seat == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-    </select></label>
-    <label class="checkbox-label"><input type="checkbox" name="fresh_grad" value="true" {% if input is defined and input.fresh_grad %}checked{% endif %}> 新生/毕业生</label>
-    <button type="submit" id="submit-btn">🔍 判断</button>
-  </div>
-  <details class="fold-section">
-    <summary>🏠 已修改家庭所在地？（折叠展开）</summary>
-    <div class="form-row"><label>新家庭所在地城市 <input class="ac-input" name="new_home" value="{{ input.new_home if input is defined else '' }}" placeholder="如：黄山" autocomplete="off"></label></div>
-    <p class="fold-hint">改家后使用新区间（学校↔新家）搜索路径，冷却期 24h</p>
-  </details>
-</form>
 
+<!-- ====== 地图背景层 ====== -->
+<div class="map-bg">
+  <div class="map-overlay"></div>
+</div>
+
+<!-- ====== 顶部导航 ====== -->
+<nav class="top-nav">
+  <span class="nav-badge"><span class="dot"></span>AI 生成</span>
+  <div class="nav-links">
+    <a href="/">首页</a>
+    <a href="/cases">案例库</a>
+  </div>
+</nav>
+
+<!-- ====== Hero 左右分栏区域 ====== -->
+<section class="hero-section">
+
+  <!-- 左侧：标题 + 描述 + 按钮 -->
+  <div class="hero-left">
+    <h1 class="hero-title">
+      学生票区间<br><span class="highlight">合规判断</span>
+    </h1>
+    <p class="hero-subtitle">
+      输入你的出行计划，快速判断能否享受学生优惠。支持同城归并、反向购票、改家后区间与联程分段判定。
+    </p>
+    <div class="hero-actions">
+      <button form="check-form" type="submit" id="submit-btn" class="btn-hero-primary">开始判断</button>
+      <a href="/cases" class="btn-hero-secondary">查看案例库</a>
+    </div>
+  </div>
+
+  <!-- 右侧：表单卡片 -->
+  <div class="hero-right" id="form-anchor">
+    <div class="form-card">
+      <div class="form-card-header">
+        <h2>填写出行信息</h2>
+        <p>输入城市名或站名均可，系统自动识别同城车站</p>
+      </div>
+
+      <form id="check-form" method="post" action="/check">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="school">学校所在地城市</label>
+            <input id="school" class="ac-input" name="school" value="{{ input.school if input is defined else '' }}" required placeholder="如：成都" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="home">家庭所在地城市</label>
+            <input id="home" class="ac-input" name="home" value="{{ input.home if input is defined else '' }}" required placeholder="如：北京" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="dep">出发站</label>
+            <input id="dep" class="ac-input" name="dep" value="{{ input.dep if input is defined else '' }}" required placeholder="如：成都东" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="arr">到达站</label>
+            <input id="arr" class="ac-input" name="arr" value="{{ input.arr if input is defined else '' }}" required placeholder="如：北京西" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- 途经站 -->
+        <div class="waypoint-section">
+          <div class="waypoint-header">
+            <span class="waypoint-title">途经站点（可选，支持联程分段判定）</span>
+            <button type="button" class="btn-add" onclick="addWaypoint()">+ 添加</button>
+          </div>
+          <div id="waypoints-container">
+            {% if input is defined and input.waypoints %}
+              {% for w in input.waypoints %}
+              <div class="waypoint-item">
+                <input type="text" name="waypoints" value="{{ w }}" placeholder="请输入途经站，如：武汉" autocomplete="off">
+                <button type="button" class="btn-remove" onclick="removeWaypoint(this)">移除</button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row-inline">
+          <div class="form-group" style="flex: 1; min-width: 140px;">
+            <label for="seat">席别</label>
+            <select id="seat" name="seat">
+              <option value="">不限</option>
+              {% for s in allowed_seats %}<option value="{{ s }}" {% if input is defined and input.seat == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+            </select>
+          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" name="fresh_grad" value="true" {% if input is defined and input.fresh_grad %}checked{% endif %}>
+            新生 / 毕业生
+          </label>
+        </div>
+
+        <details class="fold-section">
+          <summary>已修改家庭所在地？（点击展开）</summary>
+          <div class="fold-body">
+            <div class="form-group" style="max-width: 100%;">
+              <label for="new_home">新家庭所在地城市</label>
+              <input id="new_home" class="ac-input" name="new_home" value="{{ input.new_home if input is defined else '' }}" placeholder="如：黄山" autocomplete="off">
+            </div>
+            <p class="fold-hint">改家后使用新区间（学校↔新家）搜索路径，冷却期 24 小时</p>
+          </div>
+        </details>
+
+        <div class="form-submit">
+          <button type="submit" id="submit-btn" class="btn-submit">开始判断</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</section>
+
+<!-- ====== 判定结果 ====== -->
 {% if report %}
-<div class="result {% if report.result.ok %}ok{% else %}fail{% endif %}">
-  <div class="result-header">
-    {% if report.result.ok %}<span class="badge ok">✅ 符合优惠区间</span>{% if report.result.is_reverse %}<span class="badge rev">🔁 反向购票</span>{% endif %}
-    {% else %}<span class="badge fail">❌ 不符合优惠区间</span>{% endif %}
-    {% if report.result.seat_invalid %}<span class="badge warn">⚠️ 席别不符</span>{% endif %}
-    {% if input is defined and input.new_home %}<span class="badge rev">🏠 新区间</span>{% endif %}
-  </div>
-  <p class="reason">{{ report.result.reason }}</p>
+<div class="result-section-wrapper">
+  <section class="result-card {% if report.result.ok %}ok{% else %}fail{% endif %}">
+    <div class="result-header">
+      {% if report.result.ok %}
+        <span class="status-badge ok">符合优惠区间</span>
+        {% if report.result.is_reverse %}<span class="status-badge rev">反向购票</span>{% endif %}
+      {% else %}
+        <span class="status-badge fail">不符合优惠区间</span>
+      {% endif %}
+      {% if report.result.seat_invalid %}<span class="status-badge warn">席别不符</span>{% endif %}
+      {% if input is defined and input.new_home %}<span class="status-badge newhome">新区间</span>{% endif %}
+    </div>
 
-  {% if report.result.path %}
-  <details open><summary>优惠路径（{{ report.result.path|length }} 站）</summary>
-    <div class="path-box">{{ report.result.path | join(" › ") }}</div>
-  </details>
-  {% endif %}
+    <p class="result-reason">{{ report.result.reason }}</p>
 
-  {% if paths %}
-  <div id="pathChart" style="width:100%;height:420px;margin-top:16px;"></div>
-  {% endif %}
+    {% if report.result.path %}
+    <details class="path-details" open>
+      <summary>优惠路径（{{ report.result.path|length }} 站）</summary>
+      <div class="path-box">{{ report.result.path | join(" › ") }}</div>
+    </details>
+    {% endif %}
 
-  {% if report.suggestions %}
-  <div class="suggestions"><h3>建议</h3><ul>{% for tip in report.suggestions %}<li>{{ tip }}</li>{% endfor %}</ul></div>
-  {% endif %}
-  {% if report.result.warnings %}
-  <div class="warnings"><h3>提示</h3><ul>{% for w in report.result.warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>
-  {% endif %}
+    {% if paths %}
+    <div id="pathChart"></div>
+    {% endif %}
+
+    {% if report.suggestions %}
+    <div class="result-section">
+      <h3>建议</h3>
+      <ul>{% for tip in report.suggestions %}<li>{{ tip }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    {% if report.result.warnings %}
+    <div class="result-section">
+      <h3>提示</h3>
+      <ul>{% for w in report.result.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+  </section>
 </div>
 {% endif %}
 
+<!-- ====== 分段路线结果 ====== -->
 {% if route_report %}
-<div class="result">
-  <h3>路线分段判定结果</h3>
-  <p class="summary-text">{{ route_report.overall_summary }}</p>
-  <div class="seg-progress">
-  {% for seg in route_report.segments %}
-  <span class="dot {% if seg.ok %}ok{% else %}fail{% endif %}"></span>
-  {% if not loop.last %}<span class="line {% if seg.ok and route_report.segments[loop.index0+1].ok %}ok{% else %}fail{% endif %}"></span>{% endif %}
-  {% endfor %}
-</div>
-<div class="segments-list">
-  {% for seg in route_report.segments %}
-    <div class="segment-item {% if seg.ok %}student{% else %}adult{% endif %}">
-      <div class="segment-route"><span class="station">{{ seg.dep }}</span> <span class="arrow">→</span> <span class="station">{{ seg.arr }}</span></div>
-      <div class="segment-status">
-        {% if seg.ok %}
-        <span class="badge ok">✅ 合规</span><span class="ticket-type student">🎓 学生票</span>
-        {% else %}
-        <span class="badge fail">❌ 不合规</span><span class="ticket-type adult">🧑 成人票</span>
-        <p class="reason">{{ seg.reason }}</p>
+<div class="result-section-wrapper">
+  <section class="result-card ok">
+    <div class="card-header">
+      <span class="card-header-icon"></span>
+      <div><h2>路线分段判定结果</h2></div>
+    </div>
+
+    <div class="segment-overview">
+      <p class="summary-text">{{ route_report.overall_summary }}</p>
+      <div class="seg-progress">
+        {% for seg in route_report.segments %}
+        <span class="dot {% if seg.ok %}ok{% else %}fail{% endif %}"></span>
+        {% if not loop.last %}<span class="line {% if seg.ok and route_report.segments[loop.index0+1].ok %}ok{% else %}fail{% endif %}"></span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="segments-list">
+      {% for seg in route_report.segments %}
+      <div class="segment-item {% if seg.ok %}student{% else %}adult{% endif %}">
+        <div class="segment-route">
+          <span class="station">{{ seg.dep }}</span>
+          <span class="arrow">→</span>
+          <span class="station">{{ seg.arr }}</span>
+        </div>
+        <div class="segment-status">
+          {% if seg.ok %}
+            <span class="status-badge ok">合规</span>
+            <span class="ticket-type student">学生票</span>
+          {% else %}
+            <span class="status-badge fail">不合规</span>
+            <span class="ticket-type adult">成人票</span>
+            <p class="reason">{{ seg.reason }}</p>
+          {% endif %}
+        </div>
+        {% if seg.path %}
+        <details class="path-details">
+          <summary>优惠路径（{{ seg.path|length }} 站）</summary>
+          <div class="path-box">{{ seg.path | join(" › ") }}</div>
+        </details>
         {% endif %}
       </div>
-      {% if seg.path %}<details><summary>优惠路径（{{ seg.path|length }} 站）</summary><div class="path-box">{{ seg.path | join(" › ") }}</div></details>{% endif %}
+      {% endfor %}
     </div>
-  {% endfor %}
-  </div>
-  {% if route_report.has_adult_segments %}
-  <div class="suggestions"><h4>💡 如何尽可能使用学生票？</h4><ul>
-    <li>标记为"成人票"的区间需购买全价车票。</li>
-    <li>若希望全程使用学生票，可考虑修改家庭所在地（若确实迁居）或调整途经点使所有区间落在优惠路径上。</li>
-  </ul></div>
-  {% endif %}
+
+    {% if route_report.has_adult_segments %}
+    <div class="result-section">
+      <h3>如何尽可能使用学生票？</h3>
+      <ul>
+        <li>标记为"成人票"的区间需购买全价车票。</li>
+        <li>若希望全程使用学生票，可考虑修改家庭所在地（若确实迁居）或调整途经点使所有区间落在优惠路径上。</li>
+      </ul>
+    </div>
+    {% endif %}
+  </section>
 </div>
 {% endif %}
-</main>
 
 <footer>
-  <p>数据来源：全国客运铁路线路站点字典 v2 | 规则依据：《铁路旅客运输规程》第十六条</p>
+  <p>数据来源：全国客运铁路线路站点字典 v2 · 规则依据：《铁路旅客运输规程》第十六条</p>
   <p>每学年（10.1-9.30）可购 4 次单程 · 联程 5 天内扣 1 次 · 仅限硬座/硬卧/二等座/一等座/一等卧/二等卧/动卧/多功能座</p>
 </footer>
 
@@ -120,12 +239,12 @@ function addWaypoint() {
   var d = document.createElement('div');
   d.className = 'waypoint-item';
   d.innerHTML = '<input type="text" name="waypoints" placeholder="请输入途经站，如：武汉" autocomplete="off">'
-    + '<button type="button" onclick="removeWaypoint(this)">✖ 移除</button>';
+    + '<button type="button" class="btn-remove" onclick="removeWaypoint(this)">移除</button>';
   c.appendChild(d);
 }
 function removeWaypoint(btn) { btn.parentElement.remove(); waypointCount--; }
 
-// ----- 同城智能自动补全（自定义下拉）-----
+// ----- 同城智能自动补全 -----
 var DROPDOWN=null;
 function closeDD(){ if(DROPDOWN){ DROPDOWN.remove(); DROPDOWN=null; }}
 document.addEventListener('click',function(e){ if(!e.target.closest('.ac-input')) closeDD(); });
@@ -133,14 +252,16 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDD();
 
 document.querySelector('form').addEventListener('submit',function(){
   var btn=document.getElementById('submit-btn');
-  if(btn){btn.textContent='⏳ 正在判断...';btn.disabled=true;setTimeout(function(){btn.textContent='🔍 判断';btn.disabled=false;},8000)}
+  if(btn){btn.textContent='正在判断...';btn.disabled=true;setTimeout(function(){btn.textContent='开始判断';btn.disabled=false;},8000)}
 });
+
 fetch('/api/stations').then(r=>r.json()).then(d=>{
   var STATIONS=d.stations, CITIES=d.cities, SC=d.station_cities;
   var citySt={};
   STATIONS.forEach(s=>{var c=SC[s]||'';if(c)(citySt[c]=citySt[c]||[]).push(s)});
   document.querySelectorAll('input.ac-input').forEach(inp=>{
     inp.setAttribute('autocomplete','off');
+    inp.parentNode.style.position='relative';
     inp.addEventListener('input',function(){
       closeDD(); var q=this.value.trim(); if(q.length<1) return;
       var seen=new Set(), opts=[], cities=[];
@@ -160,7 +281,6 @@ fetch('/api/stations').then(r=>r.json()).then(d=>{
         div.addEventListener('mousedown',function(e){ e.preventDefault(); inp.value=o; inp.dispatchEvent(new Event('input')); closeDD(); });
         dd.appendChild(div);
       });
-      inp.parentNode.style.position='relative';
       inp.parentNode.appendChild(dd); dd.addEventListener('wheel',function(e){e.stopPropagation();});
       DROPDOWN=dd;
     });
@@ -173,32 +293,42 @@ fetch('/api/stations').then(r=>r.json()).then(d=>{
   var paths={{ paths | tojson }};
   var dep="{{ input.dep }}", arr="{{ input.arr }}";
   var dom=document.getElementById('pathChart'); if(!dom)return;
-  var chart=echarts.init(dom);
+  var chart=echarts.init(dom, 'dark');
   var nodes=[], edges=[], nodeSet=new Set(), edgeSet=new Set();
   paths.forEach(function(path,idx){
     for(var i=0;i<path.length;i++){
       var s=path[i];
       if(!nodeSet.has(s)){nodeSet.add(s); var isHL=(s===dep||s===arr);
-        nodes.push({name:s, symbolSize:isHL?32:18, itemStyle:{color:isHL?'#ff4d4f':(idx===0?'#5470c6':'#91cc75')}, label:{show:true,fontSize:10}});
+        nodes.push({name:s, symbolSize:isHL?34:20, itemStyle:{color:isHL?'#f87171':(idx===0?'#4a9eff':'#6bb3ff')}, label:{show:true,fontSize:11,color:'#e8ecf4'}});
       }
       if(i<path.length-1){
         var key=path[i]+'|'+path[i+1];
         if(!edgeSet.has(key)){edgeSet.add(key);
-          edges.push({source:path[i],target:path[i+1], lineStyle:{color:idx===0?'#5470c6':'#ddd',width:idx===0?3:1}});
+          edges.push({source:path[i],target:path[i+1], lineStyle:{color:idx===0?'#4a9eff':'rgba(107,179,255,0.3)',width:idx===0?3:1}});
         }
       }
     }
   });
   chart.setOption({
-    title:{text:'优惠路径示意（深色=主路径，浅色=备选，红点=购票端点）',left:'center',textStyle:{fontSize:13}},
-    tooltip:{trigger:'item'},
-    series:[{type:'graph',layout:'force',force:{repulsion:120,edgeLength:130,gravity:.08},roam:true,draggable:true,
-      data:nodes,edges:edges,edgeSymbol:['none','arrow'],edgeSymbolSize:[0,8],label:{show:true,position:'right',fontSize:10},
-      lineStyle:{curveness:.2},emphasis:{focus:'adjacency'}}]
+    backgroundColor: 'transparent',
+    title:{text:'优惠路径示意（亮色=主路径，暗色=备选，红点=购票端点）',left:'center',textStyle:{fontSize:13,color:'#9aa8c4'}},
+    tooltip:{trigger:'item',backgroundColor:'rgba(15,25,50,0.9)',borderColor:'rgba(255,255,255,0.1)',textStyle:{color:'#e8ecf4'}},
+    series:[{type:'graph',layout:'force',force:{repulsion:140,edgeLength:140,gravity:.08},roam:true,draggable:true,
+      data:nodes,edges:edges,edgeSymbol:['none','arrow'],edgeSymbolSize:[0,8],label:{show:true,position:'right',fontSize:10,color:'#9aa8c4'},
+      lineStyle:{curveness:.2},emphasis:{focus:'adjacency'},itemStyle:{borderColor:'rgba(255,255,255,0.1)'}}]
   });
   window.addEventListener('resize',function(){chart.resize();});
 })();
 {% endif %}
+
+// ----- 平滑滚动到表单 -----
+document.querySelectorAll('a[href^="#"]').forEach(function(a){
+  a.addEventListener('click',function(e){
+    e.preventDefault();
+    var t=document.querySelector(this.getAttribute('href'));
+    if(t)t.scrollIntoView({behavior:'smooth',block:'center'});
+  });
+});
 </script>
 </body>
 </html>

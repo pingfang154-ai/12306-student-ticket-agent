@@ -7,45 +7,93 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header>
-  <h1>📚 案例库</h1>
-  <nav><a href="/">🏠 首页</a> | <a href="/cases">📚 案例库</a></nav>
-  <p class="hint">共 {{ cases|length }} 个真实案例，涵盖合规/超区间/改家/申诉合并/联程等场景</p>
+
+<!-- 地图背景 -->
+<div class="map-bg">
+  <svg class="map-svg" viewBox="0 0 800 700" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <path d="
+      M340,45 L355,42 L370,44 L385,40 L400,38 L420,36 L440,34 L460,33 L480,32
+      L500,30 L520,28 L540,26 L558,24 L574,22 L588,24 L600,28 L612,34 L622,42
+      L630,52 L638,64 L646,78 L652,94 L656,112 L658,132 L659,152 L657,172
+      L652,192 L646,212 L638,232 L628,250 L618,266 L608,280 L598,292 L586,304
+      L574,314 L562,322 L550,328 L538,333 L526,338 L514,342 L502,346 L490,350
+      L478,354 L466,358 L454,362 L442,366 L430,370 L418,374 L406,378 L394,382
+      L382,386 L370,390 L358,394 L346,398 L334,402 L322,406 L310,410 L298,414
+      L286,418 L274,422 L262,426 L250,430 L238,434 L226,438 L214,442 L202,446
+      L190,450 L178,454 L166,458 L154,462 L142,466 L130,470 L118,474 L106,478
+      L94,482 L82,486 L70,490 L62,486 L54,478 L48,468 L44,456 L42,442 L41,426
+      L40,410 L40,394 L41,378 L43,362 L46,346 L50,330 L55,314 L61,298 L68,282
+      L76,266 L85,250 L95,234 L106,218 L118,202 L131,186 L145,170 L160,154
+      L176,138 L193,122 L211,106 L230,90 L250,74 L270,60 L290,50 L310,44 L330,42
+      Z
+    " stroke="#f0c040" stroke-width="1.2" fill="rgba(240,192,64,0.02)" stroke-linejoin="round"/>
+    <ellipse cx="620" cy="500" rx="18" ry="10" stroke="#f0c040" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <defs>
+      <linearGradient id="railGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#f0c040" stop-opacity="0.9"/>
+        <stop offset="50%" stop-color="#f5d670" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#4a9eff" stop-opacity="0.3"/>
+      </linearGradient>
+    </defs>
+  </svg>
+  <div class="map-particles"></div>
+</div>
+
+<!-- 顶部导航 -->
+<nav class="top-nav">
+  <span class="nav-badge"><span class="dot"></span>AI 生成</span>
+  <div class="nav-links">
+    <a href="/">首页</a>
+    <a href="/cases" class="active">案例库</a>
+  </div>
+</nav>
+
+<!-- 案例库 Hero -->
+<header class="cases-hero">
+  <h1><span class="accent">案例库</span></h1>
+  <p>共 {{ cases|length }} 个真实案例，涵盖合规、超区间、改家、申诉合并、联程等常见场景</p>
 </header>
 
-<main class="cases-grid">
-{% for c in cases %}
-<div class="case-card">
-  <div class="case-header">
-    <span class="case-id">#{{ loop.index }}</span>
-    <h2>{{ c.title }}</h2>
-  </div>
-  <div class="case-body">
-    <p><strong>场景：</strong>{{ c.scenario }}</p>
-    <p><strong>判断：</strong>{{ c.judgment }}</p>
-    {% if c.get("recommendation") %}
-    <p><strong>建议：</strong>{{ c.recommendation }}</p>
-    {% endif %}
-    {% if c.get("key_rule") %}
-    <p class="key-rule"><strong>关键规则：</strong>{{ c.key_rule }}</p>
-    {% endif %}
-    {% if c.get("risk") %}
-    <p class="risk-tag"><strong>风险：</strong>{{ c.risk }}</p>
-    {% endif %}
-    {% if c.get("interval_on_path") is sameas true %}
-    <span class="tag ok">合规</span>
-    {% elif c.get("interval_on_path") is sameas false %}
-    <span class="tag fail">不合规</span>
-    {% elif c.get("interval_on_path") is mapping %}
-    <span class="tag partial">部分合规</span>
-    {% endif %}
-  </div>
-</div>
-{% endfor %}
+<main class="cases-main">
+  <section style="padding: 0;">
+    <div class="cases-grid">
+      {% for c in cases %}
+      <article class="case-card">
+        <div class="case-header">
+          <span class="case-id">{{ loop.index }}</span>
+          <h2>{{ c.title }}</h2>
+        </div>
+        <div class="case-body">
+          <p><strong>场景：</strong>{{ c.scenario }}</p>
+          <p><strong>判断：</strong>{{ c.judgment }}</p>
+          {% if c.get("recommendation") %}
+          <p><strong>建议：</strong>{{ c.recommendation }}</p>
+          {% endif %}
+          {% if c.get("key_rule") %}
+          <p class="key-rule"><strong>关键规则：</strong>{{ c.key_rule }}</p>
+          {% endif %}
+          {% if c.get("risk") %}
+          <p class="risk-tag"><strong>风险：</strong>{{ c.risk }}</p>
+          {% endif %}
+          <div class="case-tags">
+            {% if c.get("interval_on_path") is sameas true %}
+            <span class="tag ok">合规</span>
+            {% elif c.get("interval_on_path") is sameas false %}
+            <span class="tag fail">不合规</span>
+            {% elif c.get("interval_on_path") is mapping %}
+            <span class="tag partial">部分合规</span>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
 </main>
 
 <footer>
   <p>案例库持续更新中，源自实际用户咨询与规则验证</p>
 </footer>
+
 </body>
 </html>

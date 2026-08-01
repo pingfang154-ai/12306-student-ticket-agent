@@ -680,6 +680,56 @@ def check_compliance(school_city, home_city, dep_station, arr_station,
             if m_reason is None:
                 _record_diag(p)
 
+    # ---- 阶段四：购票区间端点必经探测（KSP 遮蔽兜底）----
+    # 场景：网络加密后出现更短的替代径路，Yen Top-K 枚举不再包含"较长但合法"
+    # 的含购票端点径路（如 成都↔上海 经南京南 被 经徐州普速 的短径路遮蔽）。
+    # 处理：把购票区间端点 C/D 自身作为必经点，探测 学校↔家庭 的廊道路径；
+    # 施加 2.6× 绕行守卫（对比学校↔家庭直达最短跳数），杜绝离谱绕行误判。
+    if not ok:
+        def _canon_station(name, sset):
+            """确定性取代表站：优先用户输入的真实站名（自动补「站」字），
+            否则取字典序最小站，避免 set 迭代序引入随机性。"""
+            n = (name or "").strip()
+            for cand in (n, n + "站"):
+                if cand in sset:
+                    return cand
+            return min(sset) if sset else None
+        rep_c = _canon_station(dep_station, setC)
+        rep_d = _canon_station(arr_station, setD)
+        if rep_c and rep_d:
+            L0sh = _direct_hops(setSchool, setHomeAll)
+            cap4 = int(L0sh * CORRIDOR_VIA_FACTOR) + 1 if L0sh != float("inf") else float("inf")
+            # 若购票区间两端点同处一条真实线路（如辛泰线慢车 泰山↔南博山），
+            # 该区间本身就是实际列车径路，放宽绕行守卫至 3.5×。
+            lines_c = set(R.STATION_INFO.get(rep_c, {}).get("lines", []))
+            lines_d = set(R.STATION_INFO.get(rep_d, {}).get("lines", []))
+            if lines_c & lines_d and L0sh != float("inf"):
+                cap4 = max(cap4, int(L0sh * 3.5) + 1)
+            for v1, v2 in ((rep_c, rep_d), (rep_d, rep_c)):
+                # 朝家方向单调递进守卫：途经点须依次逼近家庭所在地，
+                # 杜绝"先背向家庭绕行再折返"的离谱径路（如 南京↔保定 绕黄山、
+                # 南昌↔上海 绕株洲），同时放行真正介于两地之间的枢纽（如
+                # 成都↔上海 之 南京南：d(南京南,家)=5 < d(学校,家)=14）。
+                # 端点站本就位于学校/家庭城市时不视为"途经绕行点"，豁免其守卫。
+                d1 = L0sh if v1 in setSchool else _direct_hops({v1}, setHomeAll)
+                d2 = _direct_hops({v2}, setHomeAll)
+                if not (d1 <= L0sh and (d2 <= d1 or v2 in setHomeAll)):
+                    continue
+                # 分段 BFS 拼接（学校→v1→v2→家庭），不依赖枢纽表，
+                # 各段均为最短路，总长确定，避免 set 迭代序引入的随机性。
+                seg1 = _bfs_path(setSchool, {v1})
+                seg2 = _bfs_path({v1}, {v2})
+                seg3 = _bfs_path({v2}, setHomeAll)
+                if not (seg1 and seg2 and seg3):
+                    continue
+                p4 = seg1 + seg2[1:] + seg3[1:]
+                if len(p4) <= cap4:
+                    m_ok, m_rev, m_reason = _match_on_path(
+                        p4, setC, setD, setSchool, setHomeAll)
+                    if m_ok:
+                        ok, is_reverse, reason, path = True, m_rev, m_reason, p4
+                        break
+
     if not ok:
         # 所有阶段均不匹配：使用诊断信息
         if best_result[0]:

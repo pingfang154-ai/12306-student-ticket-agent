@@ -61,35 +61,46 @@ with open(_RULES_PATH, encoding="utf-8") as f:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "index.html", {
         "allowed_seats": ALLOWED_SEATS,
     })
 
-@app.post("/check", response_class=HTMLResponse)
+@app.api_route("/check", methods=["GET", "POST"], response_class=HTMLResponse)
 async def check(request: Request):
-    form_data = await request.form()
-    school = form_data.get("school", "")
-    home = form_data.get("home", "")
-    dep = form_data.get("dep", "")
-    arr = form_data.get("arr", "")
-    waypoints = form_data.getlist("waypoints")
-    seat = form_data.get("seat", "")
-    fresh_grad = form_data.get("fresh_grad") == "true"
-    new_home = form_data.get("new_home", "").strip()
+    if request.method == "POST":
+        form_data = await request.form()
+        school = form_data.get("school", "")
+        home = form_data.get("home", "")
+        dep = form_data.get("dep", "")
+        arr = form_data.get("arr", "")
+        waypoints = form_data.getlist("waypoints")
+        seat = form_data.get("seat", "")
+        fresh_grad = form_data.get("fresh_grad") == "true"
+        new_home = form_data.get("new_home", "").strip()
+    else:  # GET：支持带参数预填充 / 直接可查验的链接
+        q = request.query_params
+        school = q.get("school", "")
+        home = q.get("home", "")
+        dep = q.get("dep", "")
+        arr = q.get("arr", "")
+        waypoints = [w.strip() for w in q.get("waypoints", "").split(",") if w.strip()]
+        seat = q.get("seat", "")
+        fresh_grad = q.get("fresh_grad") == "true"
+        new_home = q.get("new_home", "").strip()
 
-    all_stations = [dep] + [w for w in waypoints if w.strip()] + [arr]
+    waypoints = [w for w in waypoints if w.strip()]
+    all_stations = [dep] + waypoints + [arr]
     inp = {"school": school, "home": home, "dep": dep, "arr": arr,
-           "waypoints": [w for w in waypoints if w.strip()],
+           "waypoints": waypoints,
            "seat": seat.strip() or None, "fresh_grad": fresh_grad,
            "new_home": new_home or None}
 
     # 有途经站 → 调用 route segments
-    if len(all_stations) > 2:
-        report = check_route_segments(school, home, all_stations,
+    nonempty = [s for s in all_stations if s.strip()]
+    if len(nonempty) > 2:
+        report = check_route_segments(school, home, nonempty,
                                        seat if seat.strip() else None, fresh_grad)
-        return templates.TemplateResponse("index.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "index.html", {
             "allowed_seats": ALLOWED_SEATS,
             "route_report": report,
             "input": inp,
@@ -105,8 +116,7 @@ async def check(request: Request):
         tips2 = suggest(school, new_home or home, dep, arr, seat if seat.strip() else None, r2)
         report["suggestions"] = report.get("suggestions", []) + ["--- 改家后新区间判断 ---"] + tips2
         report["result"]["using_new_home"] = True
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "index.html", {
         "allowed_seats": ALLOWED_SEATS,
         "report": report,
         "input": inp,
@@ -138,8 +148,7 @@ async def api_stations():
 
 @app.get("/cases", response_class=HTMLResponse)
 async def case_list(request: Request):
-    return templates.TemplateResponse("cases.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "cases.html", {
         "cases": cases,
     })
 

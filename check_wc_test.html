@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学生票区间合规判断</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<nav class="top-nav">
+  <div class="nav-inner">
+    <a href="/" class="brand">
+      <span class="brand-icon">🚄</span>
+      <span class="brand-text">
+        <span class="brand-title">学生票合规判断</span>
+        <span class="brand-sub">中国铁路 · 区间智能核验</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="active">🏠 首页</a>
+      <a href="/cases">📚 案例库</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero 区域 -->
+<header class="hero">
+  <div class="hero-inner">
+    <h1><span class="accent">学生票区间</span>合规判断</h1>
+    <p class="hero-desc">输入你的出行计划，快速判断能否享受学生优惠。支持同城归并、反向购票、改家后区间与联程分段判定。</p>
+    <div class="hero-stats">
+      <span class="stat-pill blue">🎓 学生优惠核验</span>
+      <span class="stat-pill mint">🔄 同城站自动归并</span>
+      <span class="stat-pill cream">🛤️ 铁路拓扑寻径</span>
+      <span class="stat-pill peach">📝 联程分段判定</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- 核心功能入口：表单卡片 -->
+<section class="card">
+  <div class="card-header">
+    <span class="card-header-icon blue">🔍</span>
+    <div>
+      <h2>填写出行信息</h2>
+      <p>输入城市名或站名均可，系统自动识别同城车站</p>
+    </div>
+  </div>
+
+  <form method="post" action="/check">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="school"><span class="icon">🏫</span>学校所在地城市</label>
+        <input id="school" class="ac-input" name="school" value="武汉市" required placeholder="如：成都" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="home"><span class="icon">🏠</span>家庭所在地城市</label>
+        <input id="home" class="ac-input" name="home" value="成都市" required placeholder="如：北京" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="dep"><span class="icon">🚉</span>出发站</label>
+        <input id="dep" class="ac-input" name="dep" value="汉口站" required placeholder="如：成都东" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="arr"><span class="icon">🚉</span>到达站</label>
+        <input id="arr" class="ac-input" name="arr" value="成都东站" required placeholder="如：北京西" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- 途经站 -->
+    <div class="waypoint-section">
+      <div class="waypoint-header">
+        <span class="waypoint-title">🛤️ 途经站点（可选，支持联程分段判定）</span>
+        <button type="button" class="btn-add" onclick="addWaypoint()">➕ 添加途经站</button>
+      </div>
+      <div id="waypoints-container">
+        
+      </div>
+    </div>
+
+    <div class="form-row-inline" style="margin-top: 18px;">
+      <div class="form-group" style="flex: 1; min-width: 140px;">
+        <label for="seat"><span class="icon">💺</span>席别</label>
+        <select id="seat" name="seat">
+          <option value="">不限</option>
+          <option value="多功能座" >多功能座</option><option value="硬座" >硬座</option><option value="硬卧" >硬卧</option><option value="一等座" >一等座</option><option value="二等座" >二等座</option><option value="动车组卧铺" >动车组卧铺</option><option value="二等包座" >二等包座</option>
+        </select>
+      </div>
+      <label class="checkbox-label" style="margin-top: 22px;">
+        <input type="checkbox" name="fresh_grad" value="true" >
+        新生 / 毕业生
+      </label>
+    </div>
+
+    <details class="fold-section">
+      <summary>🏠 已修改家庭所在地？（点击展开）</summary>
+      <div class="fold-body">
+        <div class="form-group" style="max-width: 360px;">
+          <label for="new_home">新家庭所在地城市</label>
+          <input id="new_home" class="ac-input" name="new_home" value="None" placeholder="如：黄山" autocomplete="off">
+        </div>
+        <p class="fold-hint">改家后使用新区间（学校↔新家）搜索路径，冷却期 24 小时</p>
+      </div>
+    </details>
+
+    <div class="form-actions">
+      <button type="submit" id="submit-btn" class="btn-primary">🔍 开始判断</button>
+      <a href="/cases" class="btn-add">📚 查看案例库</a>
+    </div>
+  </form>
+</section>
+
+<!-- 判定结果 -->
+
+<section class="result-card ok">
+  <div class="result-header">
+    
+      <span class="status-badge ok">✅ 符合优惠区间</span>
+      
+    
+    
+    
+  </div>
+
+  <p class="result-reason">购票区间端点分别落在学校所在地与家庭所在地，符合优惠区间</p>
+
+  
+  <details class="path-details" open>
+    <summary>优惠路径（10 站）</summary>
+    <div class="path-box">汉口站 › 仙桃西站 › 荆州站 › 宜昌东站 › 恩施站 › 利川站 › 丰都站 › 重庆北站 › 遂宁站 › 成都站</div>
+  </details>
+  
+
+  
+  <div id="pathChart"></div>
+  
+
+  
+  <div class="result-section">
+    <h3>💡 建议</h3>
+    <ul><li>✅ 购票区间符合学生优惠区间，可直接购票。</li><li>💡 在优惠区间内购买联程车票，各段开车时间间隔在5个自然日内，仅扣减1次优惠乘车次数。</li></ul>
+  </div>
+  
+
+  
+  <div class="result-section">
+    <h3>⚠️ 提示</h3>
+    <ul><li>每学年（10月1日-次年9月30日）可购 4 次单程，不可结转</li><li>乘车前请确保已完成本学年学生优惠资质核验（未核验仅提示，不影响区间判断）</li></ul>
+  </div>
+  
+</section>
+
+
+<!-- 分段路线结果 -->
+
+
+</main>
+
+<footer>
+  <p>数据来源：全国客运铁路线路站点字典 v2 · 规则依据：《铁路旅客运输规程》第十六条</p>
+  <p>每学年（10.1-9.30）可购 4 次单程 · 联程 5 天内扣 1 次 · 仅限硬座/硬卧/二等座/一等座/一等卧/二等卧/动卧/多功能座</p>
+</footer>
+
+<script>
+// ----- 途经站动态增删 -----
+let waypointCount = 0;
+function addWaypoint() {
+  waypointCount++;
+  var c = document.getElementById('waypoints-container');
+  var d = document.createElement('div');
+  d.className = 'waypoint-item';
+  d.innerHTML = '<input type="text" name="waypoints" placeholder="请输入途经站，如：武汉" autocomplete="off">'
+    + '<button type="button" class="btn-remove" onclick="removeWaypoint(this)">✖ 移除</button>';
+  c.appendChild(d);
+}
+function removeWaypoint(btn) { btn.parentElement.remove(); waypointCount--; }
+
+// ----- 同城智能自动补全 -----
+var DROPDOWN=null;
+function closeDD(){ if(DROPDOWN){ DROPDOWN.remove(); DROPDOWN=null; }}
+document.addEventListener('click',function(e){ if(!e.target.closest('.ac-input')) closeDD(); });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDD(); });
+
+document.querySelector('form').addEventListener('submit',function(){
+  var btn=document.getElementById('submit-btn');
+  if(btn){btn.textContent='⏳ 正在判断...';btn.disabled=true;setTimeout(function(){btn.textContent='🔍 开始判断';btn.disabled=false;},8000)}
+});
+
+fetch('/api/stations').then(r=>r.json()).then(d=>{
+  var STATIONS=d.stations, CITIES=d.cities, SC=d.station_cities;
+  var citySt={};
+  STATIONS.forEach(s=>{var c=SC[s]||'';if(c)(citySt[c]=citySt[c]||[]).push(s)});
+  document.querySelectorAll('input.ac-input').forEach(inp=>{
+    inp.setAttribute('autocomplete','off');
+    inp.parentNode.style.position='relative';
+    inp.addEventListener('input',function(){
+      closeDD(); var q=this.value.trim(); if(q.length<1) return;
+      var seen=new Set(), opts=[], cities=[];
+      STATIONS.forEach(s=>{if(s.includes(q))opts.push(s)});
+      for(var i=0;i<Math.min(opts.length,5);i++){
+        var c=SC[opts[i]]; if(c&&!seen.has(c)){
+          seen.add(c); cities.push(c);
+          (citySt[c]||[]).forEach(ss=>{if(!seen.has(ss)){seen.add(ss);opts.push(ss)}})
+        }
+      }
+      CITIES.forEach(c=>{if(c.includes(q)&&!seen.has(c)){cities.unshift(c);seen.add(c)}});
+      var items=cities.concat(opts).slice(0,30);
+      if(items.length===0)return;
+      var dd=document.createElement('div'); dd.className='ac-dropdown';
+      items.forEach(function(o){
+        var div=document.createElement('div'); div.className='ac-item'; div.textContent=o;
+        div.addEventListener('mousedown',function(e){ e.preventDefault(); inp.value=o; inp.dispatchEvent(new Event('input')); closeDD(); });
+        dd.appendChild(div);
+      });
+      inp.parentNode.appendChild(dd); dd.addEventListener('wheel',function(e){e.stopPropagation();});
+      DROPDOWN=dd;
+    });
+  });
+});
+
+// ----- ECharts 路径可视化 -----
+
+(function(){
+  var paths=[["\u6c49\u53e3\u7ad9", "\u4ed9\u6843\u897f\u7ad9", "\u8346\u5dde\u7ad9", "\u5b9c\u660c\u4e1c\u7ad9", "\u6069\u65bd\u7ad9", "\u5229\u5ddd\u7ad9", "\u4e30\u90fd\u7ad9", "\u91cd\u5e86\u5317\u7ad9", "\u9042\u5b81\u7ad9", "\u6210\u90fd\u7ad9"], ["\u6c49\u53e3\u7ad9", "\u4ed9\u6843\u897f\u7ad9", "\u8346\u5dde\u7ad9", "\u5b9c\u660c\u4e1c\u7ad9", "\u6069\u65bd\u7ad9", "\u5229\u5ddd\u7ad9", "\u4e30\u90fd\u7ad9", "\u91cd\u5e86\u5317\u7ad9", "\u5408\u5ddd\u7ad9", "\u6f7c\u5357\u7ad9", "\u9042\u5b81\u7ad9", "\u6210\u90fd\u7ad9"], ["\u6c49\u53e3\u7ad9", "\u4ed9\u6843\u897f\u7ad9", "\u8346\u5dde\u7ad9", "\u5b9c\u660c\u4e1c\u7ad9", "\u6069\u65bd\u7ad9", "\u5229\u5ddd\u7ad9", "\u4e30\u90fd\u7ad9", "\u91cd\u5e86\u5317\u7ad9", "\u9042\u5b81\u7ad9", "\u4e09\u6c47\u9547\u7ad9", "\u5927\u82f1\u4e1c\u7ad9", "\u6210\u90fd\u4e1c\u7ad9"], ["\u6c49\u53e3\u7ad9", "\u6c49\u5ddd\u7ad9", "\u5929\u95e8\u5357\u7ad9", "\u4ed9\u6843\u897f\u7ad9", "\u8346\u5dde\u7ad9", "\u5b9c\u660c\u4e1c\u7ad9", "\u6069\u65bd\u7ad9", "\u5229\u5ddd\u7ad9", "\u4e30\u90fd\u7ad9", "\u91cd\u5e86\u5317\u7ad9", "\u9042\u5b81\u7ad9", "\u6210\u90fd\u7ad9"], ["\u6c49\u53e3\u7ad9", "\u4ed9\u6843\u897f\u7ad9", "\u8346\u5dde\u7ad9", "\u5b9c\u660c\u4e1c\u7ad9", "\u6069\u65bd\u7ad9", "\u5229\u5ddd\u7ad9", "\u957f\u5bff\u5317\u7ad9", "\u91cd\u5e86\u5317\u7ad9", "\u9042\u5b81\u7ad9", "\u6210\u90fd\u7ad9"]];
+  var dep="汉口站", arr="成都东站";
+  var dom=document.getElementById('pathChart'); if(!dom)return;
+  var chart=echarts.init(dom);
+  var nodes=[], edges=[], nodeSet=new Set(), edgeSet=new Set();
+  paths.forEach(function(path,idx){
+    for(var i=0;i<path.length;i++){
+      var s=path[i];
+      if(!nodeSet.has(s)){nodeSet.add(s); var isHL=(s===dep||s===arr);
+        nodes.push({name:s, symbolSize:isHL?34:20, itemStyle:{color:isHL?'#E05252':(idx===0?'#2F8FD9':'#7FCDBB')}, label:{show:true,fontSize:11}});
+      }
+      if(i<path.length-1){
+        var key=path[i]+'|'+path[i+1];
+        if(!edgeSet.has(key)){edgeSet.add(key);
+          edges.push({source:path[i],target:path[i+1], lineStyle:{color:idx===0?'#2F8FD9':'#dbeafe',width:idx===0?3:1}});
+        }
+      }
+    }
+  });
+  chart.setOption({
+    title:{text:'优惠路径示意（深色=主路径，浅色=备选，红点=购票端点）',left:'center',textStyle:{fontSize:13,color:'#4a5568'}},
+    tooltip:{trigger:'item'},
+    series:[{type:'graph',layout:'force',force:{repulsion:140,edgeLength:140,gravity:.08},roam:true,draggable:true,
+      data:nodes,edges:edges,edgeSymbol:['none','arrow'],edgeSymbolSize:[0,8],label:{show:true,position:'right',fontSize:10},
+      lineStyle:{curveness:.2},emphasis:{focus:'adjacency'}}]
+  });
+  window.addEventListener('resize',function(){chart.resize();});
+})();
+
+</script>
+</body>
+</html>
