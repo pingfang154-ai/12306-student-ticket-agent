@@ -750,7 +750,7 @@ def check_compliance(school_city, home_city, dep_station, arr_station,
     warnings.append(f"每学年（{QUOTA['school_year']}）可购 {QUOTA['count']} 次单程，不可结转")
     warnings.append("乘车前请确保已完成本学年学生优惠资质核验（未核验仅提示，不影响区间判断）")
 
-    return {
+    result = {
         "ok": ok,
         "is_reverse": is_reverse,
         "seat_invalid": seat_invalid,
@@ -759,12 +759,29 @@ def check_compliance(school_city, home_city, dep_station, arr_station,
         "dep_city": dep_city,
         "arr_city": arr_city,
         "warnings": warnings,
+        "suggest_modify_home": False,
+        "suggested_new_home": "",
+        "new_path": [],
     }
+
+    # ---- 修改家庭所在地建议（仅当不合规且未传入 new_home_city 时尝试）----
+    if not ok and not new_home_city and arr_city and arr_city != home_city:
+        # 尝试将家庭所在地改为到达城市，重新判断
+        new_result = check_compliance(school_city, arr_city, dep_station, arr_station,
+                                       seat=seat, fresh_grad=fresh_grad)
+        if new_result["ok"]:
+            result["suggest_modify_home"] = True
+            result["suggested_new_home"] = arr_city
+            result["new_path"] = new_result["path"]
+            result["reason"] = f"若将家庭所在地修改为「{arr_city}」，则购票区间将合规。"
+
+    return result
 
 def _fail(reason, warnings):
     return {"ok": False, "is_reverse": False, "seat_invalid": False,
             "reason": reason, "path": [], "dep_city": "", "arr_city": "",
-            "warnings": warnings}
+            "warnings": warnings,
+            "suggest_modify_home": False, "suggested_new_home": "", "new_path": []}
 
 # =====================================================================
 # 3. 修改建议

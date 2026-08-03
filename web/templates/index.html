@@ -16,12 +16,96 @@
 
 <!-- ====== 顶部导航 ====== -->
 <nav class="top-nav">
-  <span class="nav-badge"><span class="dot"></span>AI 生成</span>
   <div class="nav-links">
-    <a href="/">首页</a>
+    <a href="/" class="active">首页</a>
     <a href="/cases">案例库</a>
   </div>
+  <div class="nav-right">
+    <button type="button" class="nav-reset-btn" id="reset-btn" title="清空所有输入与判断结果（不影响 AI 配置）">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="reset-icon">
+        <path d="M4 4v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4.5 10a8 8 0 1 1-0.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <span>清空输入</span>
+    </button>
+  </div>
 </nav>
+
+<!-- ====== API Key 使用说明与风险告知（点击 AI 辅助判定后先展示，10 秒倒计时 + 需滚动读完） ====== -->
+<div class="ai-modal-overlay disclaimer-overlay" id="disclaimer-overlay">
+  <div class="ai-modal disclaimer-modal">
+    <div class="disclaimer-header">
+      <span class="disclaimer-badge">风险告知</span>
+      <h3 class="disclaimer-title">🔐 API Key 使用说明与风险告知</h3>
+    </div>
+    <div class="disclaimer-body" id="disclaimer-scroll">
+      <p>在启用 AI 辅助判定功能前，请仔细阅读以下条款：</p>
+      <p class="disclaimer-section">一、功能说明</p>
+      <p>1. 本功能为平台提供的辅助工具（当前为试用阶段），通过调用您本人提供的 API Key，将购票区间信息发送至您选择的 AI 服务提供商进行二次合规校验及/或联网查询（包括车次、时刻和票价信息）。</p>
+      <p class="disclaimer-section">二、数据使用承诺</p>
+      <p>1. 您提供的 API Key 仅在本会话期间使用，用于上述明确告知的目的。API Key 仅保存在当前浏览器标签页的会话存储中（提交判断刷新页面后仍保持连接），关闭标签页或重启浏览器后自动清除，平台不会以任何形式存储或记录您的 API Key。</p>
+      <p>2. 您的购票区间信息（学校所在地、家庭所在地、出发站、到达站和中转车站）仅用于向 AI 服务提供商发起查询请求，不用于任何其他用途。</p>
+      <p class="disclaimer-section">三、费用与责任说明</p>
+      <p>1. 调用您 API Key 所产生的全部费用（如有）由您本人直接向 AI 服务提供商承担，平台不参与费用结算，亦不从中获取任何收益。</p>
+      <p>2. 您输入的 API Key 为敏感凭证，请确保您处在安全的网络环境（避免公共 WiFi、共享设备等场景），并确认该密钥仅具有您授权范围内的权限。因您自身原因导致 API Key 泄露、被盗用或超授权使用所产生的经济损失，由您自行承担。</p>
+      <p class="disclaimer-section">四、AI 生成内容免责</p>
+      <p>1. AI 服务返回的所有结论、建议或信息均为 AI 模型自动生成，仅供参考，不构成购票依据。请您通过 12306 官方渠道最终核实，因依赖 AI 生成内容而造成的任何损失，由您自行承担。</p>
+      <p class="disclaimer-section">五、撤销与禁用</p>
+      <p>1. 您可随时关闭浏览器标签页以清除已输入的 API Key；如已在第三方平台授权，请同时前往对应平台撤销令牌。</p>
+      <p class="disclaimer-lock">🔒 提示：本功能默认关闭，需您主动配置后方可启用。</p>
+    </div>
+    <div class="disclaimer-footer">
+      <div class="disclaimer-countdown" id="disclaimer-countdown">请滑动阅读至最底部&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;剩余 <span id="disclaimer-count">10</span> 秒后可确认</div>
+      <div class="disclaimer-actions">
+        <button type="button" class="btn-disclaimer-no" id="disclaimer-no">我不认可</button>
+        <button type="button" class="btn-disclaimer-yes" id="disclaimer-yes" disabled>我已知晓上述风险</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== AI 配置 Modal ====== -->
+<div class="ai-modal-overlay" id="ai-modal-overlay">
+  <div class="ai-modal">
+    <div class="ai-modal-header">
+      <h3>AI 辅助判定配置</h3>
+      <button type="button" class="ai-modal-close" id="ai-modal-close">&times;</button>
+    </div>
+    <div class="ai-modal-body">
+      <div class="ai-form-group">
+        <label for="ai-platform">AI 服务商</label>
+        <select id="ai-platform">
+          <option value="doubao">Doubao（豆包）</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="glm">GLM（智谱）</option>
+          <option value="chatgpt">ChatGPT</option>
+          <option value="gemini">Gemini</option>
+          <option value="hunyuan">腾讯混元</option>
+          <option value="wenxin">文心一言</option>
+        </select>
+        <p class="ai-network-hint" id="ai-network-hint" hidden>⚠️ 注意网络环境配置：当前服务商（ChatGPT / Gemini）需确保网络可正常访问其官方 API 服务。</p>
+      </div>
+      <div class="ai-form-group">
+        <label for="ai-apikey">API Key</label>
+        <input type="password" id="ai-apikey" placeholder="输入你的 API Key" autocomplete="off">
+      </div>
+      <div class="ai-form-group ai-checkbox-row">
+        <label class="ai-checkbox-label">
+          <input type="checkbox" id="ai-web-search">
+          <span>联网搜索（部分平台支持）</span>
+        </label>
+      </div>
+      <div class="ai-privacy-notice">
+        <span class="ai-lock-icon">&#128274;</span>
+        您的 API Key 仅保存在当前标签页会话中（刷新页面后仍保持连接），关闭标签页后自动遗忘，我们不会保存您的密钥。
+      </div>
+    </div>
+    <div class="ai-modal-footer">
+      <button type="button" class="ai-btn-skip" id="ai-modal-skip">跳过</button>
+      <button type="button" class="ai-btn-confirm" id="ai-modal-confirm">确认配置</button>
+    </div>
+  </div>
+</div>
 
 <!-- ====== Hero 左右分栏区域 ====== -->
 <section class="hero-section">
@@ -35,8 +119,13 @@
       输入你的出行计划，快速判断能否享受学生优惠。支持同城归并、反向购票、改家后区间与联程分段判定。
     </p>
     <div class="hero-actions">
-      <button form="check-form" type="submit" id="submit-btn" class="btn-hero-primary">开始判断</button>
       <a href="/cases" class="btn-hero-secondary">查看案例库</a>
+      <a href="/cases" class="btn-hero-secondary" id="btn-share-case" data-page-nav="1">分享案例</a>
+    </div>
+    <div class="hero-rules-note">
+      <p>学生票每学年（10/1-次年9/30）可购 4 次单程</p>
+      <p>联程 5 天内扣 1 次</p>
+      <p>仅限硬座 / 硬卧 / 二等座 / 一等座 / 一等卧 / 二等卧 / 动卧 / 多功能座</p>
     </div>
   </div>
 
@@ -71,14 +160,17 @@
         <!-- 途经站 -->
         <div class="waypoint-section">
           <div class="waypoint-header">
-            <span class="waypoint-title">途经站点（可选，支持联程分段判定）</span>
+            <span class="waypoint-title">中转联程车站/城市（可选）</span>
             <button type="button" class="btn-add" onclick="addWaypoint()">+ 添加</button>
+          </div>
+          <div class="waypoint-hint" id="waypoint-hint" {% if not (input is defined and input.waypoints) %}hidden{% endif %}>
+            请确保所有行程在 5 个自然日内进行（第一趟车发车时间至最后一趟行程发车的间隔不超过 5 天而非 5×24h）
           </div>
           <div id="waypoints-container">
             {% if input is defined and input.waypoints %}
               {% for w in input.waypoints %}
               <div class="waypoint-item">
-                <input type="text" name="waypoints" value="{{ w }}" placeholder="请输入途经站，如：武汉" autocomplete="off">
+                <input type="text" name="waypoints" value="{{ w }}" placeholder="请输入中转车站/城市，如：武汉" autocomplete="off">
                 <button type="button" class="btn-remove" onclick="removeWaypoint(this)">移除</button>
               </div>
               {% endfor %}
@@ -87,32 +179,40 @@
         </div>
 
         <div class="form-row-inline">
-          <div class="form-group" style="flex: 1; min-width: 140px;">
-            <label for="seat">席别</label>
-            <select id="seat" name="seat">
-              <option value="">不限</option>
-              {% for s in allowed_seats %}<option value="{{ s }}" {% if input is defined and input.seat == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-            </select>
+          <div class="fresh-grad-toggle">
+            <input type="checkbox" name="fresh_grad" value="true" id="fresh-grad-cb" {% if input is defined and input.fresh_grad %}checked{% endif %}>
+            <button type="button" class="fg-arrow-btn" id="fresh-grad-arrow" title="展开/收起新生毕业生购票提示">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fg-arrow-icon">
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <span class="fresh-grad-label">新生/毕业生购票提示</span>
           </div>
-          <label class="checkbox-label">
-            <input type="checkbox" name="fresh_grad" value="true" {% if input is defined and input.fresh_grad %}checked{% endif %}>
-            新生 / 毕业生
-          </label>
-        </div>
-
-        <details class="fold-section">
-          <summary>已修改家庭所在地？（点击展开）</summary>
-          <div class="fold-body">
-            <div class="form-group" style="max-width: 100%;">
-              <label for="new_home">新家庭所在地城市</label>
-              <input id="new_home" class="ac-input" name="new_home" value="{{ input.new_home if input is defined else '' }}" placeholder="如：黄山" autocomplete="off">
+          <div class="fresh-grad-tip{% if input is defined and input.fresh_grad %} show{% endif %}" id="fresh-grad-tip" {% if not (input is defined and input.fresh_grad) %}hidden{% endif %}>
+            <span class="fg-tip-icon">🎓</span>
+            <div class="fg-tip-text">
+              <p class="fg-tip-title">新生 / 毕业生购票权益</p>
+              <p><strong>新生</strong>凭录取通知书可购买 <em>1 次</em>学生票（9 月 30 日前单次有效）</p>
+              <p><strong>毕业生</strong>凭学生证 / 学校盖章的书面证明可额外购买 <em>2 次</em>单程优惠票（有效期至当年 9 月 30 日前）</p>
             </div>
-            <p class="fold-hint">改家后使用新区间（学校↔新家）搜索路径，冷却期 24 小时</p>
           </div>
-        </details>
+        </div>
 
         <div class="form-submit">
           <button type="submit" id="submit-btn" class="btn-submit">开始判断</button>
+          <button type="button" class="nav-ai-btn btn-ai-submit" id="ai-config-btn" title="AI 辅助判定配置">
+            <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="6" width="20" height="22" rx="5" stroke="var(--gold)" stroke-width="1.8"/>
+              <rect x="11" y="10" width="14" height="7" rx="2.5" stroke="var(--gold)" stroke-width="1.4" fill="rgba(240,192,64,0.08)"/>
+              <circle cx="13" cy="23" r="1.8" fill="var(--gold)"/>
+              <circle cx="23" cy="23" r="1.8" fill="var(--gold)"/>
+              <line x1="8" y1="19.5" x2="28" y2="19.5" stroke="var(--gold)" stroke-width="1.2"/>
+              <rect x="14" y="28" width="3" height="3" rx="1" fill="var(--gold)" opacity="0.6"/>
+              <rect x="19" y="28" width="3" height="3" rx="1" fill="var(--gold)" opacity="0.6"/>
+            </svg>
+            <span class="nav-ai-text">AI 辅助判定<em>（可选）</em></span>
+            <span class="nav-ai-dot" id="ai-status-dot"></span>
+          </button>
         </div>
       </form>
     </div>
@@ -162,6 +262,36 @@
     </div>
     {% endif %}
   </section>
+
+  {% if report.result.suggest_modify_home %}
+  <section class="result-card home-suggest-card">
+    <div class="home-suggest-header">
+      <span class="home-suggest-icon">💡</span>
+      <h3>家庭所在地修改建议</h3>
+    </div>
+    <div class="home-suggest-body">
+      <p class="home-suggest-text">
+        您购买的「{{ input.dep }} → {{ input.arr }}」超出优惠区间「{{ input.school }} → {{ input.home }}」。
+      </p>
+      <p class="home-suggest-action">
+        若将家庭所在地修改为「<strong>{{ report.result.suggested_new_home }}</strong>」，则购票区间符合学生票规则。
+      </p>
+      {% if report.result.new_path %}
+      <details class="path-details" open>
+        <summary>修改后合规路径（{{ report.result.new_path|length }} 站）</summary>
+        <div class="path-box">{{ report.result.new_path | join(" › ") }}</div>
+      </details>
+      {% endif %}
+      <p class="home-suggest-note">
+        注意：学校所在地不可修改，仅家庭所在地可根据实际情况调整。修改家庭所在地后有 24 小时冷却期。
+      </p>
+    </div>
+    <div class="home-suggest-ai" id="homeSuggestAi" style="display:none;">
+      <p>需要 AI 联网搜索辅助判断如何修改家庭所在地？</p>
+      <button type="button" class="btn-ai-suggest" id="btnAiHomeSuggest">AI 辅助分析</button>
+    </div>
+  </section>
+  {% endif %}
 </div>
 {% endif %}
 
@@ -225,11 +355,52 @@
 </div>
 {% endif %}
 
+<!-- ====== 直达/中转列车查询结果（12306 真实排图） ====== -->
+<div class="result-section-wrapper" id="direct-route-wrapper" style="display:none;">
+  <section class="result-card direct-route-card">
+    <div class="result-header">
+      <span class="status-badge ok">12306 实时列车</span>
+      <span class="direct-route-desc" id="direct-route-desc"></span>
+    </div>
+    <div class="direct-route-toolbar">
+      <label class="dr-date-label" for="direct-route-date">查询日期</label>
+      <select id="direct-route-date" class="dr-date-select"></select>
+      <span class="dr-date-hint" id="direct-route-date-hint">（含当日共 15 天可选，晚间查询可查看后续日期车次）</span>
+    </div>
+    <div class="direct-route-content" id="direct-route-content">
+      <div class="ai-loading"><span class="ai-loading-spinner"></span><span>正在查询真实列车排图...</span></div>
+    </div>
+  </section>
+</div>
+
+<!-- ====== AI 辅助判定结果 ====== -->
+<div class="result-section-wrapper" id="ai-result-wrapper" style="display:none;">
+  <section class="result-card ai-result-card">
+    <div class="ai-result-header">
+      <span class="ai-result-badge">AI 辅助分析</span>
+      <span class="ai-result-platform" id="ai-result-platform"></span>
+    </div>
+    <div class="ai-result-content" id="ai-result-content">
+      <div class="ai-loading">
+        <span class="ai-loading-spinner"></span>
+        <span>AI 正在分析中...</span>
+      </div>
+    </div>
+  </section>
+</div>
+
 <footer>
   <p>数据来源：全国客运铁路线路站点字典 v2 · 规则依据：《铁路旅客运输规程》第十六条</p>
-  <p>每学年（10.1-9.30）可购 4 次单程 · 联程 5 天内扣 1 次 · 仅限硬座/硬卧/二等座/一等座/一等卧/二等卧/动卧/多功能座</p>
 </footer>
 
+<script>
+// ----- 页面数据（供 AI 辅助判定使用） -----
+window.__pageData = {
+  hasResult: {{ 'true' if (report is defined or route_report is defined) else 'false' }},
+  input: {{ input | tojson if input is defined else '{}' | safe }},
+  localResult: {{ report.result | tojson if report is defined else 'null' | safe }}
+};
+</script>
 <script>
 // ----- 途经站动态增删 -----
 let waypointCount = 0;
@@ -238,53 +409,289 @@ function addWaypoint() {
   var c = document.getElementById('waypoints-container');
   var d = document.createElement('div');
   d.className = 'waypoint-item';
-  d.innerHTML = '<input type="text" name="waypoints" placeholder="请输入途经站，如：武汉" autocomplete="off">'
+  d.innerHTML = '<input type="text" class="ac-input" name="waypoints" placeholder="请输入中转车站/城市，如：武汉" autocomplete="off">'
     + '<button type="button" class="btn-remove" onclick="removeWaypoint(this)">移除</button>';
   c.appendChild(d);
+  // 显示 5 天行程提示（添加第一个途经站时）
+  var hint = document.getElementById('waypoint-hint');
+  if (hint) hint.hidden = false;
+  // 为新输入框绑定自动补全
+  if (window.__bindAC) window.__bindAC(d.querySelector('input.ac-input'));
 }
-function removeWaypoint(btn) { btn.parentElement.remove(); waypointCount--; }
+function removeWaypoint(btn) {
+  btn.parentElement.remove();
+  waypointCount--;
+  // 途经站删空时隐藏 5 天行程提示
+  var c = document.getElementById('waypoints-container');
+  var hint = document.getElementById('waypoint-hint');
+  if (hint && c && c.querySelectorAll('.waypoint-item').length === 0) {
+    hint.hidden = true;
+  }
+}
 
-// ----- 同城智能自动补全 -----
+// ----- 新生/毕业生购票提示：点击整个交互框（含箭头）→ 展开/收起权益提示 -----
+(function () {
+  var cb = document.getElementById('fresh-grad-cb');
+  var arrow = document.getElementById('fresh-grad-arrow');
+  var tip = document.getElementById('fresh-grad-tip');
+  var toggle = document.querySelector('.fresh-grad-toggle');
+  if (!cb || !tip) return;
+  function syncTip() {
+    if (cb.checked) {
+      tip.hidden = false;
+      // 先确保隐藏状态已被移除，下一帧再触发淡入动画
+      requestAnimationFrame(function () {
+        tip.classList.add('show');
+      });
+      if (arrow) arrow.classList.add('expanded'); // 箭头旋转 180°
+    } else {
+      tip.classList.remove('show');
+      if (arrow) arrow.classList.remove('expanded');
+      setTimeout(function () { tip.hidden = true; }, 220);
+    }
+  }
+  // 整个交互框均可点击切换（箭头点击也由容器统一处理，保留表单提交语义 fresh_grad=true）
+  if (toggle) {
+    toggle.addEventListener('click', function (e) {
+      // 避免点击 checkbox 本身造成双重触发（checkbox 已视觉隐藏但保留）
+      if (e.target === cb) return;
+      cb.checked = !cb.checked;
+      syncTip();
+    });
+  }
+  cb.addEventListener('change', syncTip);
+  // 初始状态同步箭头方向
+  if (cb.checked && arrow) arrow.classList.add('expanded');
+})();
+
+// ----- 同城智能自动补全（城市分组 + 拼音排序 + 折叠展开 + 高亮） -----
 var DROPDOWN=null;
 function closeDD(){ if(DROPDOWN){ DROPDOWN.remove(); DROPDOWN=null; }}
-document.addEventListener('click',function(e){ if(!e.target.closest('.ac-input')) closeDD(); });
+document.addEventListener('click',function(e){ if(!e.target.closest('.ac-input')&&!e.target.closest('.ac-dropdown')) closeDD(); });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeDD(); });
 
+// ----- 表单提交：记录滚动位置（提交后整页刷新时保持用户位置） -----
 document.querySelector('form').addEventListener('submit',function(){
+  try { sessionStorage.setItem('ticket_scroll_y', String(window.scrollY || 0)); } catch(e){}
   var btn=document.getElementById('submit-btn');
   if(btn){btn.textContent='正在判断...';btn.disabled=true;setTimeout(function(){btn.textContent='开始判断';btn.disabled=false;},8000)}
 });
 
+// ----- 页面加载后恢复滚动位置（若上次提交时记录了） -----
+(function(){
+  var y = null;
+  try { y = sessionStorage.getItem('ticket_scroll_y'); sessionStorage.removeItem('ticket_scroll_y'); } catch(e){}
+  if (y !== null && !isNaN(parseInt(y,10))) {
+    var target = parseInt(y,10) || 0;
+    // 等待资源（图表/图片）渲染完成后再恢复，避免高度未定导致位置偏移
+    window.addEventListener('load', function(){
+      setTimeout(function(){ window.scrollTo(0, target); }, 30);
+    });
+  }
+})();
+
+// ----- 清空输入：仅清输入框与判断结果，保留 AI 配置，不刷新页面 -----
+function resetAllInputs() {
+  // 1) 清空主输入框
+  ['school', 'home', 'dep', 'arr'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // 2) 清空途经站容器（全部移除），并隐藏 5 天行程提示
+  var wc = document.getElementById('waypoints-container');
+  if (wc) wc.innerHTML = '';
+  waypointCount = 0;
+  var wh = document.getElementById('waypoint-hint');
+  if (wh) wh.hidden = true;
+  // 3) 取消新生/毕业生勾选并隐藏权益提示（箭头复位）
+  var fg = document.querySelector('input[name="fresh_grad"]');
+  if (fg) fg.checked = false;
+  var fga = document.getElementById('fresh-grad-arrow');
+  if (fga) fga.classList.remove('expanded');
+  var fgt = document.getElementById('fresh-grad-tip');
+  if (fgt) { fgt.classList.remove('show'); fgt.hidden = true; }
+  // 5) 清除系统判断结果区（report / route_report / AI 结果容器）
+  document.querySelectorAll('.result-section-wrapper').forEach(function(el){
+    if (el.id !== 'ai-result-wrapper') el.remove();
+  });
+  var aiW = document.getElementById('ai-result-wrapper');
+  if (aiW) {
+    aiW.style.display = 'none';
+    var aiC = document.getElementById('ai-result-content');
+    if (aiC) aiC.innerHTML = '<div class="ai-loading"><span class="ai-loading-spinner"></span><span>AI 正在分析中...</span></div>';
+  }
+  // 6) 更新 __pageData（避免残留数据触发 AI 判定）
+  try { window.__pageData = { hasResult: false, input: {}, localResult: null }; } catch(e){}
+  closeDD();
+  // 7) 不滚动页面 —— 清空操作保持当前滚动位置，避免页面跳动
+  // （删除结果区后页面高度变化，若此处 scrollIntoView 会导致视口跳动）
+}
+(function(){
+  var btn = document.getElementById('reset-btn');
+  if (btn) btn.addEventListener('click', resetAllInputs);
+})();
+
+// 拼音排序比较器
+function pyCmp(a,b){ return a.localeCompare(b,'zh-CN',{numeric:false,sensitivity:'base'}); }
+
+// 高亮匹配文本
+function highlightMatch(text,query){
+  var idx=text.indexOf(query);
+  if(idx<0) return document.createTextNode(text);
+  var frag=document.createDocumentFragment();
+  if(idx>0) frag.appendChild(document.createTextNode(text.substring(0,idx)));
+  var mark=document.createElement('span');
+  mark.className='ac-highlight';
+  mark.textContent=text.substring(idx,idx+query.length);
+  frag.appendChild(mark);
+  if(idx+query.length<text.length) frag.appendChild(document.createTextNode(text.substring(idx+query.length)));
+  return frag;
+}
+
 fetch('/api/stations').then(r=>r.json()).then(d=>{
   var STATIONS=d.stations, CITIES=d.cities, SC=d.station_cities;
+  // 构建 city → stations 映射
   var citySt={};
   STATIONS.forEach(s=>{var c=SC[s]||'';if(c)(citySt[c]=citySt[c]||[]).push(s)});
-  document.querySelectorAll('input.ac-input').forEach(inp=>{
+  // 对每个城市内的车站按拼音排序（预排序）
+  Object.keys(citySt).forEach(c=>citySt[c].sort(pyCmp));
+
+  // 核心渲染函数
+  function renderDropdown(inp, q){
+    closeDD();
+    if(q.length<1) return;
+
+    // 1. 找到所有匹配的城市（城市名包含 q 或城市下有车站名包含 q）
+    var matchedCities = new Set();
+    CITIES.forEach(c=>{ if(c.includes(q)) matchedCities.add(c); });
+    STATIONS.forEach(s=>{
+      if(s.includes(q)){
+        var c=SC[s];
+        if(c) matchedCities.add(c);
+      }
+    });
+    if(matchedCities.size===0) return;
+
+    // 2. 按拼音排序城市
+    var sortedCities = Array.from(matchedCities).sort(pyCmp);
+
+    // 3. 为每个城市收集全部车站
+    var groups = [];
+    sortedCities.forEach(city=>{
+      var allSt = citySt[city] || [];
+      var stations = allSt.slice();
+      var exactIdx = stations.indexOf(q);
+      if(exactIdx > 0){ stations.splice(exactIdx,1); stations.unshift(q); }
+      groups.push({ city: city, stations: stations, cityExact: city===q });
+    });
+
+    // 城市精确匹配置顶
+    groups.sort(function(a,b){
+      if(a.cityExact && !b.cityExact) return -1;
+      if(!a.cityExact && b.cityExact) return 1;
+      return 0;
+    });
+
+    // 4. 构建 DOM
+    var dd=document.createElement('div');
+    dd.className='ac-dropdown ac-dropdown-grouped';
+
+    groups.forEach(function(g){
+      var group=document.createElement('div');
+      group.className='ac-city-group';
+
+      var header=document.createElement('div');
+      header.className='ac-city-header';
+      var cityTag=document.createElement('span');
+      cityTag.className='ac-tag ac-tag-city';
+      cityTag.textContent='城市';
+      header.appendChild(cityTag);
+      var cityName=document.createElement('span');
+      cityName.className='ac-city-name';
+      cityName.appendChild(highlightMatch(g.city, q));
+      header.appendChild(cityName);
+      header.addEventListener('mousedown',function(e){
+        e.preventDefault();
+        inp.value=g.city;
+        inp.dispatchEvent(new Event('input'));
+        closeDD();
+      });
+      group.appendChild(header);
+
+      if(g.stations.length>0){
+        var stList=document.createElement('div');
+        stList.className='ac-station-list';
+
+        g.stations.forEach(function(st, idx){
+          var item=document.createElement('div');
+          item.className='ac-item ac-station-item';
+          if(idx===0){
+            var stTag=document.createElement('span');
+            stTag.className='ac-tag ac-tag-station';
+            stTag.textContent='车站';
+            item.appendChild(stTag);
+          } else {
+            var spacer=document.createElement('span');
+            spacer.className='ac-tag-spacer';
+            item.appendChild(spacer);
+          }
+          var stName=document.createElement('span');
+          stName.className='ac-station-name';
+          stName.appendChild(highlightMatch(st, q));
+          item.appendChild(stName);
+          item.addEventListener('mousedown',function(e){
+            e.preventDefault();
+            inp.value=st;
+            inp.dispatchEvent(new Event('input'));
+            closeDD();
+          });
+          if(idx>=2){
+            item.classList.add('ac-collapsed');
+          }
+          stList.appendChild(item);
+        });
+
+        if(g.stations.length>2){
+          var toggle=document.createElement('div');
+          toggle.className='ac-collapse-toggle';
+          toggle.innerHTML='<span class="ac-arrow">&#9660;</span> 展开剩余 '+(g.stations.length-2)+' 个车站';
+          toggle.addEventListener('mousedown',function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            var isExpanded=toggle.classList.toggle('expanded');
+            stList.classList.toggle('expanded', isExpanded);
+            if(isExpanded){
+              toggle.innerHTML='<span class="ac-arrow">&#9650;</span> 收起';
+            } else {
+              toggle.innerHTML='<span class="ac-arrow">&#9660;</span> 展开剩余 '+(g.stations.length-2)+' 个车站';
+            }
+          });
+          stList.appendChild(toggle);
+        }
+
+        group.appendChild(stList);
+      }
+
+      dd.appendChild(group);
+    });
+
+    inp.parentNode.appendChild(dd);
+    dd.addEventListener('wheel',function(e){e.stopPropagation();});
+    DROPDOWN=dd;
+  }
+
+  // 绑定自动补全到输入框
+  function bindAC(inp){
     inp.setAttribute('autocomplete','off');
     inp.parentNode.style.position='relative';
     inp.addEventListener('input',function(){
-      closeDD(); var q=this.value.trim(); if(q.length<1) return;
-      var seen=new Set(), opts=[], cities=[];
-      STATIONS.forEach(s=>{if(s.includes(q))opts.push(s)});
-      for(var i=0;i<Math.min(opts.length,5);i++){
-        var c=SC[opts[i]]; if(c&&!seen.has(c)){
-          seen.add(c); cities.push(c);
-          (citySt[c]||[]).forEach(ss=>{if(!seen.has(ss)){seen.add(ss);opts.push(ss)}})
-        }
-      }
-      CITIES.forEach(c=>{if(c.includes(q)&&!seen.has(c)){cities.unshift(c);seen.add(c)}});
-      var items=cities.concat(opts).slice(0,30);
-      if(items.length===0)return;
-      var dd=document.createElement('div'); dd.className='ac-dropdown';
-      items.forEach(function(o){
-        var div=document.createElement('div'); div.className='ac-item'; div.textContent=o;
-        div.addEventListener('mousedown',function(e){ e.preventDefault(); inp.value=o; inp.dispatchEvent(new Event('input')); closeDD(); });
-        dd.appendChild(div);
-      });
-      inp.parentNode.appendChild(dd); dd.addEventListener('wheel',function(e){e.stopPropagation();});
-      DROPDOWN=dd;
+      renderDropdown(inp, this.value.trim());
     });
-  });
+  }
+  window.__bindAC = bindAC;
+
+  // 绑定所有已有输入框
+  document.querySelectorAll('input.ac-input').forEach(bindAC);
 });
 
 // ----- ECharts 路径可视化 -----
@@ -330,5 +737,7 @@ document.querySelectorAll('a[href^="#"]').forEach(function(a){
   });
 });
 </script>
+<script src="/static/script.js"></script>
+<script src="/static/page-anim.js"></script>
 </body>
 </html>

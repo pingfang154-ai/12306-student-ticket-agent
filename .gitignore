@@ -5,6 +5,15 @@ __pycache__/
 
 # ---- Backups (railway_data_v2.x.bak etc.) ----
 *.bak
+_merge_backup_zip/
+_shot/
+
+# ---- IDE / 个人配置 ----
+.coze
+
+# ---- 临时文件 ----
+_temp_*/
+*.tmp
 
 # ---- Virtual environments ----
 venv/

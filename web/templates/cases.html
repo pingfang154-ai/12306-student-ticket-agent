@@ -10,38 +10,11 @@
 
 <!-- 地图背景 -->
 <div class="map-bg">
-  <svg class="map-svg" viewBox="0 0 800 700" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-    <path d="
-      M340,45 L355,42 L370,44 L385,40 L400,38 L420,36 L440,34 L460,33 L480,32
-      L500,30 L520,28 L540,26 L558,24 L574,22 L588,24 L600,28 L612,34 L622,42
-      L630,52 L638,64 L646,78 L652,94 L656,112 L658,132 L659,152 L657,172
-      L652,192 L646,212 L638,232 L628,250 L618,266 L608,280 L598,292 L586,304
-      L574,314 L562,322 L550,328 L538,333 L526,338 L514,342 L502,346 L490,350
-      L478,354 L466,358 L454,362 L442,366 L430,370 L418,374 L406,378 L394,382
-      L382,386 L370,390 L358,394 L346,398 L334,402 L322,406 L310,410 L298,414
-      L286,418 L274,422 L262,426 L250,430 L238,434 L226,438 L214,442 L202,446
-      L190,450 L178,454 L166,458 L154,462 L142,466 L130,470 L118,474 L106,478
-      L94,482 L82,486 L70,490 L62,486 L54,478 L48,468 L44,456 L42,442 L41,426
-      L40,410 L40,394 L41,378 L43,362 L46,346 L50,330 L55,314 L61,298 L68,282
-      L76,266 L85,250 L95,234 L106,218 L118,202 L131,186 L145,170 L160,154
-      L176,138 L193,122 L211,106 L230,90 L250,74 L270,60 L290,50 L310,44 L330,42
-      Z
-    " stroke="#f0c040" stroke-width="1.2" fill="rgba(240,192,64,0.02)" stroke-linejoin="round"/>
-    <ellipse cx="620" cy="500" rx="18" ry="10" stroke="#f0c040" stroke-width="0.8" fill="none" opacity="0.5"/>
-    <defs>
-      <linearGradient id="railGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#f0c040" stop-opacity="0.9"/>
-        <stop offset="50%" stop-color="#f5d670" stop-opacity="0.6"/>
-        <stop offset="100%" stop-color="#4a9eff" stop-opacity="0.3"/>
-      </linearGradient>
-    </defs>
-  </svg>
-  <div class="map-particles"></div>
+  <div class="map-overlay"></div>
 </div>
 
 <!-- 顶部导航 -->
 <nav class="top-nav">
-  <span class="nav-badge"><span class="dot"></span>AI 生成</span>
   <div class="nav-links">
     <a href="/">首页</a>
     <a href="/cases" class="active">案例库</a>
@@ -55,10 +28,69 @@
 </header>
 
 <main class="cases-main">
+  <!-- ====== 案例分享上传区（默认折叠） ====== -->
+  <section class="case-share-section" id="case-share-section">
+    <!-- 折叠态：提示文案 + 黄色上传按钮 -->
+    <div class="case-share-collapsed" id="case-share-collapsed">
+      <div class="case-share-prompt">
+        <p class="case-share-tip">期待您的实际购票经历分享💡这将帮助到更多的同学👇</p>
+        <button type="button" class="btn-case-share" id="case-share-open">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="share-icon">
+            <path d="M12 16V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>上传案例</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 展开态：上传表单 -->
+    <div class="case-share-form" id="case-share-form" hidden>
+      <div class="case-share-grid">
+        <div class="form-group">
+          <label for="cs-school">学校所在城市</label>
+          <input type="text" id="cs-school" placeholder="如：北京" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="cs-home">家庭所在城市</label>
+          <input type="text" id="cs-home" placeholder="如：上海" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="cs-dep">出发城市</label>
+          <input type="text" id="cs-dep" placeholder="如：北京" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="cs-arr">到达城市</label>
+          <input type="text" id="cs-arr" placeholder="如：西安" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="cs-desc">您的经历描述（200 字以内，不限标点与语言）</label>
+        <textarea id="cs-desc" maxlength="200" rows="4" placeholder="请自由描述您遇到的学生票购票经历、困惑或结果……"></textarea>
+        <p class="case-share-count"><span id="cs-desc-count">0</span>/200</p>
+      </div>
+      <div class="case-share-submit">
+        <p class="case-share-msg" id="case-share-msg"></p>
+        <div class="case-share-actions">
+          <button type="button" class="btn-case-collapse" id="case-collapse-btn">收起</button>
+          <button type="button" class="btn-case-share btn-case-upload" id="case-upload-btn">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="share-icon">
+              <path d="M12 16V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 9l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>上传</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section style="padding: 0;">
     <div class="cases-grid">
       {% for c in cases %}
-      <article class="case-card">
+      <article class="case-card {% if c.get('user_submitted') %}case-card-user{% endif %}">
         <div class="case-header">
           <span class="case-id">{{ loop.index }}</span>
           <h2>{{ c.title }}</h2>
@@ -66,6 +98,9 @@
         <div class="case-body">
           <p><strong>场景：</strong>{{ c.scenario }}</p>
           <p><strong>判断：</strong>{{ c.judgment }}</p>
+          {% if c.get("user_description") %}
+          <p class="user-desc"><strong>经历描述：</strong>{{ c.user_description }}</p>
+          {% endif %}
           {% if c.get("recommendation") %}
           <p><strong>建议：</strong>{{ c.recommendation }}</p>
           {% endif %}
@@ -76,6 +111,9 @@
           <p class="risk-tag"><strong>风险：</strong>{{ c.risk }}</p>
           {% endif %}
           <div class="case-tags">
+            {% if c.get("user_submitted") %}
+            <span class="tag user-tag">用户分享</span>
+            {% endif %}
             {% if c.get("interval_on_path") is sameas true %}
             <span class="tag ok">合规</span>
             {% elif c.get("interval_on_path") is sameas false %}
@@ -95,5 +133,97 @@
   <p>案例库持续更新中，源自实际用户咨询与规则验证</p>
 </footer>
 
+<script src="/static/page-anim.js"></script>
+<script>
+// ===== 案例分享上传：折叠 ↔ 展开 + 提交 =====
+(function () {
+  var collapsed = document.getElementById('case-share-collapsed');
+  var formBox = document.getElementById('case-share-form');
+  var openBtn = document.getElementById('case-share-open');
+  var uploadBtn = document.getElementById('case-upload-btn');
+  var msgEl = document.getElementById('case-share-msg');
+  var descEl = document.getElementById('cs-desc');
+  var countEl = document.getElementById('cs-desc-count');
+  if (!collapsed || !formBox || !openBtn) return;
+
+  function expand() {
+    if (!formBox.hidden) return;
+    formBox.hidden = false;
+    collapsed.style.display = 'none';
+    // 参考首页 fresh-grad-tip 的展开动效：淡入 + 上滑
+    requestAnimationFrame(function () {
+      formBox.classList.add('show');
+    });
+    // 从首页联动跳转而来时自动展开后，滚动到该区域
+    if (formBox.getAttribute('data-autofocus') === '1') {
+      setTimeout(function () {
+        document.getElementById('case-share-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var first = document.getElementById('cs-school');
+        if (first) first.focus();
+      }, 120);
+    }
+  }
+
+  openBtn.addEventListener('click', expand);
+
+  // 收起：折叠回提示态（保留已填内容，再次展开可继续编辑）
+  var collapseBtn = document.getElementById('case-collapse-btn');
+  function collapse() {
+    if (formBox.hidden) return;
+    formBox.classList.remove('show');
+    // 淡出动画结束后隐藏表单、恢复折叠提示区
+    setTimeout(function () {
+      formBox.hidden = true;
+      collapsed.style.display = '';
+    }, 200);
+  }
+  if (collapseBtn) collapseBtn.addEventListener('click', collapse);
+
+  // 200 字计数
+  if (descEl && countEl) {
+    descEl.addEventListener('input', function () {
+      countEl.textContent = String(descEl.value.length);
+    });
+  }
+
+  // 提交上传
+  uploadBtn.addEventListener('click', function () {
+    var payload = {
+      school: document.getElementById('cs-school').value.trim(),
+      home: document.getElementById('cs-home').value.trim(),
+      dep: document.getElementById('cs-dep').value.trim(),
+      arr: document.getElementById('cs-arr').value.trim(),
+      description: descEl.value.trim()
+    };
+    if (msgEl) { msgEl.textContent = ''; }
+    uploadBtn.disabled = true;
+    fetch('/api/user_case', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      uploadBtn.disabled = false;
+      if (data.ok) {
+        if (msgEl) { msgEl.style.color = 'var(--ok)'; msgEl.textContent = data.message; }
+        // 重新加载页面展示新案例（按现有序号排列）
+        setTimeout(function () { window.location.reload(); }, 1200);
+      } else {
+        if (msgEl) { msgEl.style.color = 'var(--fail)'; msgEl.textContent = data.error || '提交失败，请重试'; }
+      }
+    }).catch(function () {
+      uploadBtn.disabled = false;
+      if (msgEl) { msgEl.style.color = 'var(--fail)'; msgEl.textContent = '网络错误，请稍后重试'; }
+    });
+  });
+
+  // ---- 从首页「分享案例」按钮联动跳转：自动展开 ----
+  var autoExpand = null;
+  try { autoExpand = sessionStorage.getItem('expand_case_form'); sessionStorage.removeItem('expand_case_form'); } catch (e) {}
+  if (autoExpand === '1') {
+    formBox.setAttribute('data-autofocus', '1');
+    expand();
+  }
+})();
+</script>
 </body>
 </html>
